@@ -4,11 +4,14 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 22.01.2018 12:34
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 22.01.2018 12:53
 import os
+import sys
+if not (os.path.abspath('../../thesdk') in sys.path):
+    sys.path.append(os.path.abspath('../../thesdk'))
+from thesdk import *
 import subprocess
 import shlex
-from thesdk import *
 
 class vhdl(thesdk):
     #Subclass of TheSDK for logging method
