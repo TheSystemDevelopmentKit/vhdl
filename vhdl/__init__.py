@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 30.07.2018 12:52
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 30.07.2018 13:45
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -79,7 +79,7 @@ class vhdl(thesdk):
         except:
             pass
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vhdlcmd) })
-        subprocess.call(shlex.split(self._vhdlcmd));
+        subprocess.check_output(shlex.split(self._vhdlcmd));
         
         count=0
         while not os.path.isfile(self._outfile):
