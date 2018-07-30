@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 22.01.2018 12:53
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 30.07.2018 12:52
 import os
 import sys
 if not (os.path.abspath('../../thesdk') in sys.path):
@@ -67,9 +67,13 @@ class vhdl(thesdk):
 
     def run_vhdl(self):
         self._vhdlcmd=self.get_vhdlcmd()
+        filetimeout=30 #File appearance timeout in seconds
+        count=0
         while not os.path.isfile(self._infile):
-            self.print_log({'type':'I', 'msg':"Wait infile to appear"})
-            time.sleep(5)
+            count +=1
+            if count >5:
+                self.print_log({'type':'F', 'msg':"VHDL infile writing timeout"})
+            time.sleep(int(filetimeout/5))
         try:
             os.remove(self._outfile)
         except:
@@ -77,9 +81,12 @@ class vhdl(thesdk):
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vhdlcmd) })
         subprocess.call(shlex.split(self._vhdlcmd));
         
+        count=0
         while not os.path.isfile(self._outfile):
-            self.print_log({'type':'I', 'msg':"Wait outfile to appear"})
-            time.sleep(5)
+            count +=1
+            if count >5:
+                self.print_log({'type':'F', 'msg':"Verilog outfile timeout"})
+            time.sleep(int(filetimeout/5))
         os.remove(self._infile)
         #This must be in every subclass file. Works also with __init__.py files
         #self._classfile=os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
