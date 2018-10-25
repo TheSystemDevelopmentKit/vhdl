@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 23:45
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 23:57
 import os
 import sys
 import subprocess
@@ -222,7 +222,7 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
 
     def run_vhdl(self):
         self._vhdlcmd=self.get_vhdlcmd()
-        filetimeout=30 #File appearance timeout in seconds
+        filetimeout=60 #File appearance timeout in seconds
         count=0
         #This is to ensure operation of obsoleted code, to be removed
         if hasattr(self,'_infile'):
