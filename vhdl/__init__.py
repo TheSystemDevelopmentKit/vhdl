@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 06.09.2018 14:26
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 23:45
 import os
 import sys
 import subprocess
@@ -173,7 +173,7 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
         self._vhdlworkpath    =  self._vhdlsimpath +'/work'
 
     def get_vhdlcmd(self):
-        submission = ' bsub -K '  
+        submission = ' bsub '  
         vhdllibcmd =  'vlib ' +  self._vhdlworkpath + ' && sleep 2'
         vhdllibmapcmd = 'vmap work ' + self._vhdlworkpath
         if (self.model is 'vhdl'):
@@ -257,8 +257,8 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
                     pass
 
         self.print_log({'type':'I', 'msg':"Running external command %s\n" %(self._vhdlcmd) })
-        subprocess.check_output(shlex.split(self._vhdlcmd));
-        #subprocess.run(shlex.split(self._vhdlcmd));
+        #subprocess.check_output(shlex.split(self._vhdlcmd));
+        subprocess.run(shlex.split(self._vhdlcmd));
         
         count=0
         #This is to ensure operation of obsoleted code, to be removed
