@@ -4,7 +4,7 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 25.10.2018 23:57
+# Last modification by Marko Kosunen, marko.kosunen@aalto.fi, 30.10.2018 23:19
 import os
 import sys
 import subprocess
@@ -173,7 +173,7 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
         self._vhdlworkpath    =  self._vhdlsimpath +'/work'
 
     def get_vhdlcmd(self):
-        submission = ' bsub '  
+        submission = ' bsub -K '  
         vhdllibcmd =  'vlib ' +  self._vhdlworkpath + ' && sleep 2'
         vhdllibmapcmd = 'vmap work ' + self._vhdlworkpath
         if (self.model is 'vhdl'):
