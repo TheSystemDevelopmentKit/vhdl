@@ -1,13 +1,13 @@
-# Written by Marko Kosunen 20190109
+# Created by Marko Kosunen 20190801
 # marko.kosunen@aalto.fi
 import os
 from thesdk import *
-from verilog import *
+from vhdl import *
 from copy import deepcopy
-from verilog.connector import verilog_connector
-from verilog.connector import verilog_connector_bundle
+from vhdl.connector import vhdl_connector
+from vhdl.connector import vhdl_connector_bundle
 
-class verilog_module(thesdk):
+class vhdl_entity(thesdk):
     # Idea  1) a) Collect IO's to database
     #          b) collect parameters to dict
     #       2) Reconstruct the module definition
@@ -55,7 +55,7 @@ class verilog_module(thesdk):
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
-            self._ios=verilog_connector_bundle()
+            self._ios=vhdl_connector_bundle()
             if os.path.isfile(self.file):
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
@@ -96,7 +96,7 @@ class verilog_module(thesdk):
                     if dut:
                         for ioline in dut.split(','):
                             extr=ioline.split()
-                            signal=verilog_connector()
+                            signal=vhdl_connector()
                             signal.cls=extr[0]
                             if len(extr)==2:
                                 signal.name=extr[1]
@@ -126,9 +126,12 @@ class verilog_module(thesdk):
     @property
     def parameters(self):
         if not hasattr(self,'_parameters'):
-            startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
-            parammatch=re.compile(r".*(?<=#)\(.*$")
-            paramstopmatch=re.compile(r".*\).*$")
+            startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
+            print(startmatch)
+            parammatch=re.compile(r".*(?<=generic)\(.*$")
+            print(parammatch)
+            paramstopmatch=re.compile(r".*\);.*$")
+            print(paramstopmatch)
             parablock=''
             self._parameters=Bundle()
             # Extract the module definition
@@ -141,22 +144,25 @@ class verilog_module(thesdk):
                         if (not modfind and startmatch.match(line)):
                             modfind=True
                         if modfind and parammatch.match(line):
-                                parafind=True
+                              print(line)
+                              print(parammatch.match(line))
+                              parafind=True
                         if ( modfind and parafind and paramstopmatch.match(line)):
                             modfind=False
                             parafind=False
-                            line=re.sub(r"\).*$","",line)
-                            line=re.sub(r"//.*$","",line)
+                            line=re.sub(r"\);.*$","",line)
+                            line=re.sub(r"--.*$","",line)
                             #Inclusive
                             parablock=parablock+line +'\n'
                         elif modfind and parafind:
-                            line=re.sub(r"//.*$","",line)
+                            line=re.sub(r"--.*$","",line)
                             parablock=parablock+line
                     if parablock:
                         #Generate lambda functions for pattern filtering
+                        print(parablock)
                         parablock.replace("\n","")
                         fils=[
-                            re.compile(r"module\s*"+self.name+r"\s*"),
+                            re.compile(r"generic\s*"),
                             re.compile(r"#"),
                             re.compile(r"\(*"),
                             re.compile(r"\)*"),
@@ -212,7 +218,7 @@ class verilog_module(thesdk):
     @property
     def io_signals(self):
         if not hasattr(self,'_io_signals'):
-            self._io_signals=verilog_connector_bundle()
+            self._io_signals=vhdl_connector_bundle()
             for ioname, io in self.ios.Members.items():
                 # Connectior is created already in io definitio
                 # just point to it  
@@ -241,7 +247,7 @@ class verilog_module(thesdk):
                 parameters=parameters+'\n)'
                 self._definition='module %s %s' %(self.name, parameters)
             else:
-                self._definition='module %s ' %(self.name)
+                self._definition='entity %s is' %(self.name)
             first=True
             if self.ios.Members:
                 for ioname, io in self.ios.Members.items():
@@ -258,11 +264,11 @@ class verilog_module(thesdk):
                             self._definition=(self._definition+
                                     ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
                     else:
-                        self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+                        self.print_log(type='F', msg='Assigning signal direction %s to vhdl module IO.' %(io.cls))
                 self._definition=self._definition+'\n)'
-            self._definition=self._definition+';'
+            #self._definition=self._definition+';'
             if self.contents:
-                self._definition=self._definition+self.contents+'\nendmodule'
+                self._definition=self._definition+self.contents+'\nend entity;'
         return self._definition
 
     # Instance is defined through the io_signals
@@ -297,7 +303,7 @@ class verilog_module(thesdk):
                         self._instance=(self._instance+
                                 ('    .%s(%s)' %(io.name, io.connect.name)))
                 else:
-                    self.print_log(type='F', msg='Assigning signal direction %s to verilog module IO.' %(io.cls))
+                    self.print_log(type='F', msg='Assigning signal direction %s to vhdl module IO.' %(io.cls))
             self._instance=self._instance+('\n)')
         self._instance=self._instance+(';')
         return self._instance
@@ -305,7 +311,7 @@ class verilog_module(thesdk):
     #Methods
     def export(self,**kwargs):
         if not os.path.isfile(self.file):
-            print('Exporting verilog_module to %s.' %(self.file))
+            print('Exporting vhdl_entity to %s.' %(self.file))
             print('printing')
             with open(self.file, "w") as module_file:
                 module_file.write(self.definition)
@@ -314,7 +320,7 @@ class verilog_module(thesdk):
             self.print_log(type='F', msg=('Export target file %s exists.\n Force overwrite with force=True.' %(self.file)))
 
         elif kwargs.get('force'):
-            print('Forcing overwrite of verilog_module to %s.' %(self.file))
+            print('Forcing overwrite of vhdl_entity to %s.' %(self.file))
             with open(self.file, "w") as module_file:
                 module_file.write(self.definition)
 
@@ -322,7 +328,7 @@ class verilog_module(thesdk):
 if __name__=="__main__":
     pass
 
-##Some definitions generally present in verilog_modules
+##Some definitions generally present in vhdl_entities
 #    @property
 #    def wire(self):
 #        if hasattr(self,'_wire'):

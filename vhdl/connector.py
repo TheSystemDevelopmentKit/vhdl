@@ -1,11 +1,11 @@
-# Written by Marko Kosunen 20190109 marko.kosunen@aalto.fi
+# Created by Marko Kosunen 20190801 marko.kosunen@aalto.fi
 
 import os
 from thesdk import *
-from verilog import *
+from vhdl import *
 
 ## Class for storing signals in wide sense, including IO's
-class verilog_connector(thesdk):
+class vhdl_connector(thesdk):
     @property
     def _classfile(self):
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
@@ -17,7 +17,7 @@ class verilog_connector(thesdk):
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self.rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
-        self.connect=kwargs.get('connect',None) # Can be verilog connector, would be recursive
+        self.connect=kwargs.get('connect',None) # Can be vhdl connector, would be recursive
         self.ioformat=kwargs.get('ioformat','%d')# By default, connectors are handles as integers in file io.
 
     @property
@@ -56,9 +56,9 @@ class verilog_connector(thesdk):
         else:
             return '%s <= %s;\n' %(self.name, value)
 
-class verilog_connector_bundle(Bundle):
+class vhdl_connector_bundle(Bundle):
     def __init__(self,**kwargs):
-        super(verilog_connector_bundle,self).__init__(**kwargs)
+        super(vhdl_connector_bundle,self).__init__(**kwargs)
 
     def new(self,**kwargs):
         name=kwargs.get('name','')
@@ -67,8 +67,8 @@ class verilog_connector_bundle(Bundle):
         ll=kwargs.get('ll',0)              # Bus range left limit 0 by default
         rl=kwargs.get('ll',0)              # Bus bus range right limit 0 by default
         init=kwargs.get('init','')         # Initial value
-        connect=kwargs.get('connect',None) # Can't be verilog connector by default. Would be recursive
-        self.Members[name]=verilog_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
+        connect=kwargs.get('connect',None) # Can't be vhdl connector by default. Would be recursive
+        self.Members[name]=vhdl_connector(name=name,cls=cls,type=type,ll=ll,rl=rl,init=init,connect=connect)
 
     def update(self,**kwargs):
         #[TODO]: Write sanity checks
@@ -107,7 +107,7 @@ class verilog_connector_bundle(Bundle):
                 assignments=assignments+value.assignment
         return intend(text=assignments, level=kwargs.get('level',0))
 
-    def verilog_inits(self,**kwargs):
+    def vhdl_inits(self,**kwargs):
         #[TODO]: Write sanity checks
         inits=''
         match=kwargs.get('match',r".*") #By default, assign all
