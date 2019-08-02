@@ -157,24 +157,27 @@ class vhdl_entity(thesdk):
                         elif modfind and parafind:
                             line=re.sub(r"--.*$","",line)
                             parablock=parablock+line
+                    # Eventually we need to generate at least a tuple,
+                    # but we could also have a parameter class with more properties  
                     if parablock:
                         #Generate lambda functions for pattern filtering
                         print(parablock)
                         parablock.replace("\n","")
+                        #After these values we have name:type:value
                         fils=[
                             re.compile(r"generic\s*"),
-                            re.compile(r"#"),
+                            re.compile(r"--"),
                             re.compile(r"\(*"),
                             re.compile(r"\)*"),
                             re.compile(r"\s*"),
-                            re.compile(r";*")
+                            re.compile(r"="),
                           ]
                         func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
                         parablock=reduce(lambda s, func: func(s), func_list, parablock)
-                        parablock=parablock.split(',')
+                        parablock=parablock.split(';')
                         for param in parablock:
-                                extr=param.split('=')
-                                self._parameters.Members[extr[0]]=extr[1]
+                            extr=param.split(':')
+                            self._parameters.Members[extr[0]]=(extr[1],extr[2])
         return self._parameters
 
     # Setting principle, assign a dict
@@ -240,12 +243,12 @@ class vhdl_entity(thesdk):
                 first=True
                 for name, val in self.parameters.Members.items():
                     if first:
-                        parameters='#(\n    %s = %s' %(name,val)
+                        parameters='generic(\n        %s : %s := %s' %(name,val[0],val[1])
                         first=False
                     else:
-                        parameters=parameters+',\n    %s = %s' %(name,val)
-                parameters=parameters+'\n)'
-                self._definition='module %s %s' %(self.name, parameters)
+                        parameters+=';\n        %s : %s := %s' %(name,val[0],val[1])
+                parameters=parameters+'\n);'
+                self._definition='entity %s is \n    %s' %(self.name, parameters)
             else:
                 self._definition='entity %s is' %(self.name)
             first=True

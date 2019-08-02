@@ -4,7 +4,6 @@
 # Adding this class as a superclass enforces the definitions for vhdl in the
 # subclasses
 ##############################################################################
-
 import os
 import sys
 import subprocess
