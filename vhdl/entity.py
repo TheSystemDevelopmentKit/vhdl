@@ -49,9 +49,10 @@ class vhdl_entity(thesdk):
     @property
     def ios(self):
         if not hasattr(self,'_ios'):
-            startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
-            iomatch=re.compile(r".*(?<!#)\(.*$")
-            parammatch=re.compile(r".*#\(.*$")
+            startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
+            iomatch=re.compile(r".*port\(.*$")
+            #iomatch=re.compile(r".*$")
+            parammatch=re.compile(r".*generic\(.*$")
             iostopmatch=re.compile(r'.*\);.*$')
             dut=''
             # Extract the module definition
@@ -69,51 +70,51 @@ class vhdl_entity(thesdk):
                                 paramfind=True
                         if modfind and iomatch.match(line):
                                 iofind=True
-                        if ( modfind and (iofind or paramfind) and iostopmatch.match(line)):
-                            modfind=False
-                            iofind=False
-                            paramfind=False
-                            #Inclusive
-                            dut=dut+re.sub(r"//.*;.*$","\);",line) +'\n'
-                        elif modfind and iofind:
-                            dut=dut+re.sub(r"//.*$","",line)
-                    #Remove the scala comments
-                    dut=re.sub(r",.*$",",",dut)
+                        if modfind and iofind: 
+                            # We need to filter all (); combinations 
+                            # from the line and check if ); still exists
+                            testline=re.sub("\(.*?\)","",line)
+                            if iostopmatch.match(testline):
+                                modfind=False
+                                iofind=False
+                                paramfind=False
+                                #Inclusive
+                                line=re.sub(r"--.*;.*$","\);",line) +'\n'
+                                #Force newline
+                                line=re.sub(r"\);","",line) +'\n'
+                                dut+=re.sub(r"--.*;.*$","\);",line) +'\n'
+                            dut=dut+re.sub(r"--.*$","",line)
+                    #Remove the EOL comments
+                    dut=re.sub(r";.*$",",",dut)
                     dut=dut.replace("\n","")
                     #Generate lambda functions for pattern filtering
                     fils=[
-                        re.compile(r"module\s*"+self.name+r"\s*"),
-                        re.compile(r"\("),
-                        re.compile(r"\)"),
+                        re.compile(r"port\s*\(\s*"),
                         re.compile(r"^\s*"),
-                        re.compile(r"\s*(?=> )"),
-                        re.compile(r"////.*$"),
-                        re.compile(r";.*")
+                        re.compile(r"--.*$"),
                       ]
                     func_list= [lambda s,fil=x: re.sub(fil,"",s) for x in fils]
                     dut=reduce(lambda s, func: func(s), func_list, dut)
-                    dut=re.sub(r",\s*",",",dut)
+                    dut=re.sub(r"\s+"," ",dut)
+                    dut=re.sub(r"in","in :",dut)
+                    dut=re.sub(r"out","out :",dut)
+                    dut=re.sub(r"inout","inout :",dut)
+                    dut=re.sub(r"\s:\s",":",dut)
+                    dut=re.sub(r"\s*;\s*",";",dut)
                     if dut:
-                        for ioline in dut.split(','):
-                            extr=ioline.split()
+                        for ioline in dut.split(';'):
+                            extr=ioline.split(':')
                             signal=vhdl_connector()
-                            signal.cls=extr[0]
-                            if len(extr)==2:
-                                signal.name=extr[1]
-                            elif len(extr)==3:
-                                signal.name=extr[2]
-                                busdef=re.match(r"^.*\[(\d+):(\d+)\]",extr[1])
-                                signal.ll=int(busdef.group(1))
-                                signal.rl=int(busdef.group(2))
-
-                            #By default, we create a connecttor that is cross connected to the input
+                            signal.cls=extr[1]
+                            signal.name=extr[0]
+                            signal.type=extr[2]
+                            busdef=re.match(r"^.*\((.*)( downto | to )(.*)\)",extr[2])
+                            if busdef:
+                                signal.ll=busdef.group(1)
+                                signal.rl=busdef.group(3)
                             signal.connect=deepcopy(signal)
-                            if signal.cls=='input':
-                                signal.connect.cls='reg'
-                            if signal.cls=='output':
-                                signal.connect.cls='wire'
+                            signal.connect.cls='signal'
                             signal.connect.connect=signal
-
                             self._ios.Members[signal.name]=signal
         return self._ios
 
@@ -127,11 +128,8 @@ class vhdl_entity(thesdk):
     def parameters(self):
         if not hasattr(self,'_parameters'):
             startmatch=re.compile(r"entity *(?="+self.name+r"\s*is)"+r".*.+$")
-            print(startmatch)
             parammatch=re.compile(r".*(?<=generic)\(.*$")
-            print(parammatch)
             paramstopmatch=re.compile(r".*\);.*$")
-            print(paramstopmatch)
             parablock=''
             self._parameters=Bundle()
             # Extract the module definition
@@ -144,8 +142,6 @@ class vhdl_entity(thesdk):
                         if (not modfind and startmatch.match(line)):
                             modfind=True
                         if modfind and parammatch.match(line):
-                              print(line)
-                              print(parammatch.match(line))
                               parafind=True
                         if ( modfind and parafind and paramstopmatch.match(line)):
                             modfind=False
@@ -161,7 +157,6 @@ class vhdl_entity(thesdk):
                     # but we could also have a parameter class with more properties  
                     if parablock:
                         #Generate lambda functions for pattern filtering
-                        print(parablock)
                         parablock.replace("\n","")
                         #After these values we have name:type:value
                         fils=[
@@ -189,26 +184,22 @@ class vhdl_entity(thesdk):
     @property
     def contents(self):
         if not hasattr(self,'_contents'):
-            startmatch=re.compile(r"module *(?="+self.name+r")\s*"+r".*.+$")
-            headerstopmatch=re.compile(r".*\);.*$")
-            modulestopmatch=re.compile(r"\s*endmodule\s*$")
+            startmatch=re.compile(r"\s*architecture\s+.*\s+of\s+"+self.name+r".*$")
+            modulestopmatch=re.compile(r"\s*end\s+.* architecture\s*$")
             self._contents='\n'
             # Extract the module definition
             if os.path.isfile(self.file):
+                modfind=False
                 with open(self.file) as infile:
                     wholefile=infile.readlines()
-                    modfind=False
-                    headers=False
                     for line in wholefile:
-                        if (not modfind and startmatch.match(line)):
+                        if startmatch.match(line):
+                            self._contents=line
                             modfind=True
-                        if modfind and headerstopmatch.match(line):
-                                headers=True
-                        elif ( modfind and headers and modulestopmatch.match(line)):
+                        elif modfind and modulestopmatch.match(line):
                             modfind=False
-                            headers=False
                             #exclusive
-                        elif modfind and headers:
+                        elif modfind:
                             self._contents=self._contents+line
         return self._contents
     @contents.setter
@@ -247,7 +238,7 @@ class vhdl_entity(thesdk):
                         first=False
                     else:
                         parameters+=';\n        %s : %s := %s' %(name,val[0],val[1])
-                parameters=parameters+'\n);'
+                parameters=parameters+'\n    );'
                 self._definition='entity %s is \n    %s' %(self.name, parameters)
             else:
                 self._definition='entity %s is' %(self.name)
@@ -255,23 +246,18 @@ class vhdl_entity(thesdk):
             if self.ios.Members:
                 for ioname, io in self.ios.Members.items():
                     if first:
-                        self._definition=self._definition+'(\n'
+                        self._definition=self._definition+'\n    port(\n'
                         first=False
                     else:
-                        self._definition=self._definition+',\n'
-                    if io.cls in [ 'input', 'output', 'inout' ]:
-                        if io.width==1:
-                            self._definition=(self._definition+
-                                    ('    %s %s' %(io.cls, io.name)))
-                        else:
-                            self._definition=(self._definition+
-                                    ('    %s [%s:%s] %s' %(io.cls, io.ll, io.rl, io.name)))
+                        self._definition=self._definition+';\n'
+                    if io.cls in [ 'in', 'out', 'inout' ]:
+                        self._definition=self._definition \
+                                + '        %s : %s %s' %(io.name, io.cls, io.type)
                     else:
-                        self.print_log(type='F', msg='Assigning signal direction %s to vhdl module IO.' %(io.cls))
-                self._definition=self._definition+'\n)'
-            #self._definition=self._definition+';'
+                        self.print_log(type='F', msg='Assigning signal direction %s to vhdl entity IO.' %(io.cls))
+                self._definition=self._definition+'\n);'
             if self.contents:
-                self._definition=self._definition+self.contents+'\nend entity;'
+                self._definition=self._definition+'\nend entity;\n'+self.contents
         return self._definition
 
     # Instance is defined through the io_signals

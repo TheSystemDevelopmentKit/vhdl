@@ -12,8 +12,8 @@ class vhdl_connector(thesdk):
 
     def __init__(self,**kwargs):
         self.name=kwargs.get('name','')
-        self.cls=kwargs.get('cls','')   # Input,output,inout,reg,wire,reg,wire
-        self.type=kwargs.get('type','') # signed
+        self.cls=kwargs.get('cls','')   # in,out,inout,signal
+        self.type=kwargs.get('type','') # e.g. std_logic_vector 
         self.ll=kwargs.get('ll',0)      # Bus range left limit 0 by default
         self.rl=kwargs.get('ll',0)      # Bus bus range right limit 0 by default
         self.init=kwargs.get('init','') # Initial value
