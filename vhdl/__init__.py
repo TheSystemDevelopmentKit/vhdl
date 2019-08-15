@@ -1,9 +1,16 @@
-# Vhdl class 
-# Provides vhdl-related properties and methods for other classes TheSDK
-#
-# Adding this class as a superclass enforces the definitions for vhdl in the
-# subclasses
-##############################################################################
+"""
+====
+VHDL
+====
+
+Simulation interface package for The System Development Kit
+
+Provides utilities to import VHDL entities to python environment and 
+automatically generate testbenches for the most common simulation cases.
+
+Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 2017.
+
+"""
 import os
 import sys
 import subprocess
@@ -14,116 +21,14 @@ import numpy as np
 import pandas as pd
 from functools import reduce
 
-class vhdl_iofile(thesdk):
-    def __init__(self,parent=None,**kwargs):
-        if parent==None:
-            self.print_log(type='F', msg="Parent of VHDL input file not given")
-        try:  
-            rndpart=os.path.basename(tempfile.mkstemp()[1])
-            self.name=kwargs.get('name') 
-            self.file=parent.vhdlsimpath +'/' + self.name + '_' + rndpart +'.txt'
-        except:
-            self.print_log(type='F', msg="VHDL IO file definition failed")
-
-        self.data=kwargs.get('data',[])
-        self.simparam=kwargs.get('param','-g g_file_' + kwargs.get('name') + '=' + self.file)
-        self.datatype=kwargs.get('datatype',int)
-        self.dir=kwargs.get('dir','out')    #Files are output files by default, and direction is 
-                                            # changed to 'in' when written 
-        self.iotype=kwargs.get('iotype','data') # The file is a data file by default 
-                                                # Option data,ctrl
-        self.hasheader=kwargs.get('hasheader',False) # Headers False by default. 
-                                                     # Do not generate things just to remove them in the next step
-        if hasattr(parent,'preserve_iofiles'):
-            self.preserve=parent.preserve_iofiles
-        else:
-            self.preserve=False
-
-        #TODO: Needs a check to eliminate duplicate entries to iofiles
-        if hasattr(parent,'iofiles'):
-            self.print_log(type='O',msg="Attribute iofiles has been replaced by iofile_bundle")
-
-        if hasattr(parent,'iofile_bundle'):
-            parent.iofile_bundle.new(name=self.name,val=self)
-
-    #default is the data file
-    def write(self,**kwargs):
-        self.dir='in'  # Only input files are written
-        #Parse the rows to split complex numbers
-        data=kwargs.get('data',self.data)
-        datatype=kwargs.get('dtype',self.datatype)
-        iotype=kwargs.get('iotype',self.iotype)
-        header_line = []
-        parsed=[]
-        if iotype=='data':
-            for i in range(data.shape[1]):
-                if i==0:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-                else:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-
-            df=pd.DataFrame(parsed,dtype=datatype)
-            if self.hasheader:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
-            else:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
-        elif iotype=='ctrl':
-            for i in range(data.shape[1]):
-                if i==0:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       self.print_log(type='F', msg='Timestamp can not be complex.')
-                   else:
-                       parsed=np.r_['1',data[:,i].reshape(-1,1)]
-                       header_line.append('Timestamp')
-                else:
-                   if np.iscomplex(data[0,i]) or np.iscomplexobj(data[0,i]) :
-                       parsed=np.r_['1',parsed,np.real(data[:,i]).reshape(-1,1),np.imag(data[:,i].reshape(-1,1))]
-                       header_line.append('%s_%s_Real' %(self.name,i))
-                       header_line.append('%s_%s_Imag' %(self.name,i))
-                   else:
-                       parsed=np.r_['1',parsed,data[:,i].reshape(-1,1)]
-                       header_line.append('%s_%s' %(self.name,i))
-
-            df=pd.DataFrame(parsed,dtype=datatype)
-            if self.hasheader:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=header_line)
-            else:
-                df.to_csv(path_or_buf=self.file,sep="\t",index=False,header=False)
-        time.sleep(10)
-        
-    def read(self,**kwargs):
-        fid=open(self.file,'r')
-        datatype=kwargs.get('dtype',self.datatype)
-        readd = pd.read_csv(fid,dtype=object,sep='\t')
-        self.data=readd.values
-        fid.close()
-
-    def remove(self):
-        if self.preserve:
-            self.print_log(type='I', msg="Preserve_value is %s" %(self.preserve))
-            self.print_log(type='I', msg="Preserving file %s" %(self.file))
-        else:
-            try:
-                os.remove(self.file)
-            except:
-                pass
-
-
 class vhdl(thesdk,metaclass=abc.ABCMeta):
-    #These need to be converted to abstact properties
+    """Adding this class as a superclass enforces the definitions 
+    for vhdl simulations in the subclasses.
+    
+    """
+
     def __init__(self):
+        #These need to be converted to abstact properties
         self.model           =[]
         self._vhdlcmd        =[]
         self._name           =[]
@@ -139,11 +44,8 @@ class vhdl(thesdk,metaclass=abc.ABCMeta):
     @property
     @abstractmethod
     def _classfile(self):
+        """This must be in every subclass of thesdk"""
         return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
-    #This must be in every subclass file.
-    #@property
-    #def _classfile(self):
-    #    return os.path.dirname(os.path.realpath(__file__)) + "/"+__name__
 
     @property
     def preserve_iofiles(self):

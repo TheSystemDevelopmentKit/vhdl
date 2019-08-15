@@ -1,24 +1,27 @@
-# Verilog_iofile class 
-# Provides verilog- file-io related properties and methods for TheSDK verilog
-#
-# Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 
-#                      Yue Dai, 
-# 2018
-##############################################################################
+""" 
+vhdl_iofile
+-----------
+
+ Provides vhdl file-io related properties and methods for TheSDK vhdl
+
+ Initially written by Marko Kosunen, marko.kosunen@aalto.fi, 
+ Yue Dai,  2018
+
+ """
 import os
 import sys
 from abc import * 
 from thesdk import *
 import numpy as np
 import pandas as pd
-from verilog.connector import intend
+from vhdl.connector import intend
 
-class verilog_iofile(IO):
+class vhdl_iofile(IO):
     def __init__(self,parent=None,**kwargs):
         if parent==None:
             self.print_log(type='F', msg="Parent of Verilog input file not given")
         try:  
-            super(verilog_iofile,self).__init__(**kwargs)
+            super(vhdl_iofile,self).__init__(**kwargs)
             self.parent=parent
             self.rndpart=os.path.basename(tempfile.mkstemp()[1])
             self.name=kwargs.get('name') 
@@ -88,7 +91,7 @@ class verilog_iofile(IO):
         self._datatype=value
 
     @property
-    def ionames(self): # list of associated verilog ionames
+    def ionames(self): # list of associated vhdl ionames
         if hasattr(self,'_ionames'):
             return self._ionames
         else:
@@ -101,7 +104,7 @@ class verilog_iofile(IO):
 
 
 
-    # Parameters for the verilog testbench estracted from
+    # Parameters for the vhdl testbench estracted from
     # Simulation parameters
     @property
     def file(self):
@@ -125,103 +128,103 @@ class verilog_iofile(IO):
     
     # Status parameter
     @property
-    def verilog_stat(self):
-        if not hasattr(self,'_verilog_stat'):
-            self._verilog_stat='status_%s' %(self.name)
-        return self._verilog_stat
+    def vhdl_stat(self):
+        if not hasattr(self,'_vhdl_stat'):
+            self._vhdl_stat='status_%s' %(self.name)
+        return self._vhdl_stat
 
-    @verilog_stat.setter
-    def verilog_stat(self,value):
-        self._verilog_stat=value
+    @vhdl_stat.setter
+    def vhdl_stat(self,value):
+        self._vhdl_stat=value
 
     #Timestamp integers for control files
     @property
-    def verilog_ctstamp(self):
-        if not hasattr(self,'_verilog_ctstamp'):
-            self._verilog_ctstamp='ctstamp_%s' %(self.name)
-        return self._verilog_ctstamp
+    def vhdl_ctstamp(self):
+        if not hasattr(self,'_vhdl_ctstamp'):
+            self._vhdl_ctstamp='ctstamp_%s' %(self.name)
+        return self._vhdl_ctstamp
     @property
-    def verilog_ptstamp(self):
-        if not hasattr(self,'_verilog_ptstamp'):
-            self._verilog_ptstamp='ptstamp_%s' %(self.name)
-        return self._verilog_ptstamp
+    def vhdl_ptstamp(self):
+        if not hasattr(self,'_vhdl_ptstamp'):
+            self._vhdl_ptstamp='ptstamp_%s' %(self.name)
+        return self._vhdl_ptstamp
     @property
-    def verilog_tdiff(self):
-        if not hasattr(self,'_verilog_diff'):
-            self._verilog_tdiff='tdiff_%s' %(self.name)
-        return self._verilog_tdiff
+    def vhdl_tdiff(self):
+        if not hasattr(self,'_vhdl_diff'):
+            self._vhdl_tdiff='tdiff_%s' %(self.name)
+        return self._vhdl_tdiff
     
 
-    # Status integer verilog definitions
+    # Status integer vhdl definitions
     @property
-    def verilog_statdef(self):
+    def vhdl_statdef(self):
         if self.iotype=='sample':
-            self._verilog_statdef='integer %s, %s;\n' %(self.verilog_stat, self.verilog_fptr)
+            self._vhdl_statdef='integer %s, %s;\n' %(self.vhdl_stat, self.vhdl_fptr)
         elif self.iotype=='event':
-            self._verilog_statdef='integer %s, %s, %s, %s, %s;\n' %(self.verilog_stat, 
-                    self.verilog_fptr, self.verilog_ctstamp, self.verilog_ptstamp, 
-                    self.verilog_tdiff)
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ctstamp) 
-            self._verilog_statdef+='initial %s=0;\n' %(self.verilog_ptstamp) 
-            for connector in self.verilog_connectors:
-                self._verilog_statdef+='integer buffer_%s;\n' %(connector.name)
-        return self._verilog_statdef
+            self._vhdl_statdef='integer %s, %s, %s, %s, %s;\n' %(self.vhdl_stat, 
+                    self.vhdl_fptr, self.vhdl_ctstamp, self.vhdl_ptstamp, 
+                    self.vhdl_tdiff)
+            self._vhdl_statdef+='initial %s=0;\n' %(self.vhdl_ctstamp) 
+            self._vhdl_statdef+='initial %s=0;\n' %(self.vhdl_ptstamp) 
+            for connector in self.vhdl_connectors:
+                self._vhdl_statdef+='integer buffer_%s;\n' %(connector.name)
+        return self._vhdl_statdef
 
     # File pointer
     @property
-    def verilog_fptr(self):
-        self._verilog_fptr='f_%s' %(self.name)
-        return self._verilog_fptr
+    def vhdl_fptr(self):
+        self._vhdl_fptr='f_%s' %(self.name)
+        return self._vhdl_fptr
 
-    @verilog_fptr.setter
-    def verilog_fptr(self,value):
-        self._verilog_fptr=value
+    @vhdl_fptr.setter
+    def vhdl_fptr(self,value):
+        self._vhdl_fptr=value
 
     # File opening, direction dependent 
     @property
-    def verilog_fopen(self):
+    def vhdl_fopen(self):
         if self.dir=='in':
-            self._verilog_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
+            self._vhdl_fopen='initial %s = $fopen(%s,\"r\");\n' %(self.vhdl_fptr,next(iter(self.vlogparam)))
         if self.dir=='out':
-            self._verilog_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.verilog_fptr,next(iter(self.vlogparam)))
-        return self._verilog_fopen
+            self._vhdl_fopen='initial %s = $fopen(%s,\"w\");\n' %(self.vhdl_fptr,next(iter(self.vlogparam)))
+        return self._vhdl_fopen
 
     # File close
     @property
-    def verilog_fclose(self):
-        self._verilog_fclose='$fclose(%s);\n' %(self.verilog_fptr)
-        return self._verilog_fclose
+    def vhdl_fclose(self):
+        self._vhdl_fclose='$fclose(%s);\n' %(self.vhdl_fptr)
+        return self._vhdl_fclose
     
-    # List for verilog connectors.
-    # These are the verilog signals/regs associated with this file
+    # List for vhdl connectors.
+    # These are the vhdl signals/regs associated with this file
     @property
-    def verilog_connectors(self):
-        if not hasattr(self,'_verilog_connectors'):
-            self._verilog_connectors=[]
-        return self._verilog_connectors
+    def vhdl_connectors(self):
+        if not hasattr(self,'_vhdl_connectors'):
+            self._vhdl_connectors=[]
+        return self._vhdl_connectors
 
-    @verilog_connectors.setter
-    def verilog_connectors(self,value):
+    @vhdl_connectors.setter
+    def vhdl_connectors(self,value):
         #Ordered list.
-        self._verilog_connectors=value
+        self._vhdl_connectors=value
 
     # Verilog_connectors is an ordered list Because order is important in file
     # IO. However, we need a mapping from name to value to assing data to 
     # correct columns of data. Less use for data files, more for controls
     def connector_datamap(self,**kwargs):
         name=kwargs.get('name')
-        if not self._verilog_connectors:
+        if not self._vhdl_connectors:
             self.print_log(type='F', msg='Connector undefined, can\'t access.')
         else:
             if self.iotype=='sample':
-                self._verilog_connector_datamap=dict()
+                self._vhdl_connector_datamap=dict()
             elif self.iotype=='event':
-                self._verilog_connector_datamap={'time':0}
+                self._vhdl_connector_datamap={'time':0}
             index=0
-            for val in self.verilog_connectors:
+            for val in self.vhdl_connectors:
                 index+=1
-                self._verilog_connector_datamap.update({'%s' %(val.name): index})
-        return self._verilog_connector_datamap[name]
+                self._vhdl_connector_datamap.update({'%s' %(val.name): index})
+        return self._vhdl_connector_datamap[name]
 
     def set_control_data(self,**kwargs):
         time=kwargs.get('time',int(0))
@@ -232,9 +235,9 @@ class verilog_iofile(IO):
         # First, we initialize the data
         if self.Data is None:
             if np.isscalar(init):
-                self.Data=(np.ones((1,len(self._verilog_connectors)+1))*init).astype(int)
+                self.Data=(np.ones((1,len(self._vhdl_connectors)+1))*init).astype(int)
                 self.Data[0,0]=int(time)
-            elif init.shape[1]==len(self._verilog_connectors)+1:
+            elif init.shape[1]==len(self._vhdl_connectors)+1:
                 self.Data=init.astype(int)
         else: #Lets manipulate
             index=np.where(self.Data[:,0]==time)[0]
@@ -251,63 +254,63 @@ class verilog_iofile(IO):
 
     # Condition string for monitoring if the signals are unknown
     @property 
-    def verilog_io_condition(self):
-        if not hasattr(self,'_verilog_io_condition'):
+    def vhdl_io_condition(self):
+        if not hasattr(self,'_vhdl_io_condition'):
             if self.dir=='out':
                 first=True
-                for connector in self.verilog_connectors:
+                for connector in self.vhdl_connectors:
                     if first:
-                        self._verilog_io_condition='~$isunknown(%s)' %(connector.name)
+                        self._vhdl_io_condition='~$isunknown(%s)' %(connector.name)
                         first=False
                     else:
-                        self._verilog_io_condition='%s \n&& ~$isunknown(%s)' \
-                                %(self._verilog_io_condition,connector.name)
+                        self._vhdl_io_condition='%s \n&& ~$isunknown(%s)' \
+                                %(self._vhdl_io_condition,connector.name)
             elif self.dir=='in':
-                self._verilog_io_condition= ' 1 '
-        return self._verilog_io_condition
+                self._vhdl_io_condition= ' 1 '
+        return self._vhdl_io_condition
 
     @property 
-    def verilog_io_sync(self):
-        if not hasattr(self,'_verilog_io_sync'):
+    def vhdl_io_sync(self):
+        if not hasattr(self,'_vhdl_io_sync'):
             if self.iotype=='sample':
-                self._verilog_io_sync= '@(posedge clock)\n'
-        return self._verilog_io_sync
+                self._vhdl_io_sync= '@(posedge clock)\n'
+        return self._vhdl_io_sync
 
-    @verilog_io_sync.setter
-    def verilog_io_sync(self,value):
-        self._verilog_io_sync=value
+    @vhdl_io_sync.setter
+    def vhdl_io_sync(self,value):
+        self._vhdl_io_sync=value
 
-    @verilog_io_condition.setter
+    @vhdl_io_condition.setter
     @property 
-    def verilog_io_condition(self,value):
-                self._verilog_io_condition= value
+    def vhdl_io_condition(self,value):
+                self._vhdl_io_condition= value
 
-    def verilog_io_condition_append(self,**kwargs ):
+    def vhdl_io_condition_append(self,**kwargs ):
         cond=kwargs.get('cond', '')
         if not (not cond ):
-            self._verilog_io_condition='%s \n%s' \
-            %(self.verilog_io_condition,cond)
+            self._vhdl_io_condition='%s \n%s' \
+            %(self.vhdl_io_condition,cond)
 
-    @verilog_io_condition.setter
-    def verilog_io_condition(self,value):
-        self._verilog_io_condition=value
+    @vhdl_io_condition.setter
+    def vhdl_io_condition(self,value):
+        self._vhdl_io_condition=value
 
     # Write or read construct for file IO
     @property
-    def verilog_io(self,**kwargs):
+    def vhdl_io(self,**kwargs):
         first=True
         if self.iotype=='sample':
             if self.dir=='out':
-                self._verilog_io=' always '+self.verilog_io_sync +'begin\n'
-                self._verilog_io+='if ( %s ) begin\n' %(self.verilog_io_condition)
-                self._verilog_io+='$fwrite(%s, ' %(self.verilog_fptr)
+                self._vhdl_io=' always '+self.vhdl_io_sync +'begin\n'
+                self._vhdl_io+='if ( %s ) begin\n' %(self.vhdl_io_condition)
+                self._vhdl_io+='$fwrite(%s, ' %(self.vhdl_fptr)
             elif self.dir=='in':
-                self._verilog_io='while (!$feof(f_%s)) begin\n' %self.name
-                self._verilog_io+='   %s' %self.verilog_io_sync
-                self._verilog_io+='        if ( %s ) begin\n' %self.verilog_io_condition      
-                self._verilog_io+='        %s = $fscanf(%s, ' \
-                        %(self.verilog_stat, self.verilog_fptr)
-            for connector in self.verilog_connectors:
+                self._vhdl_io='while (!$feof(f_%s)) begin\n' %self.name
+                self._vhdl_io+='   %s' %self.vhdl_io_sync
+                self._vhdl_io+='        if ( %s ) begin\n' %self.vhdl_io_condition      
+                self._vhdl_io+='        %s = $fscanf(%s, ' \
+                        %(self.vhdl_stat, self.vhdl_fptr)
+            for connector in self.vhdl_connectors:
                 if first:
                     iolines='    %s' %(connector.name)
                     format='\"%s' %(connector.ioformat)
@@ -317,54 +320,54 @@ class verilog_iofile(IO):
                     format='%s\\t%s' %(format,connector.ioformat)
 
             format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n);\n        end\n    end\n'
+            self._vhdl_io+=format+iolines+'\n);\n        end\n    end\n'
 
         #Control files are handled differently
         elif self.iotype=='event':
             if self.dir=='out':
                 self.print_log(type='F', msg='Output writing for control files not supported')
             elif self.dir=='in':
-                self._verilog_io='begin\nwhile(!$feof(%s)) begin\n    ' \
-                        %(self.verilog_fptr)
-                self._verilog_io+='%s = %s-%s;\n    #%s begin\n    ' \
-                        %(self.verilog_tdiff,
-                        self.verilog_ctstamp, self.verilog_ptstamp,
-                        self.verilog_tdiff)    
+                self._vhdl_io='begin\nwhile(!$feof(%s)) begin\n    ' \
+                        %(self.vhdl_fptr)
+                self._vhdl_io+='%s = %s-%s;\n    #%s begin\n    ' \
+                        %(self.vhdl_tdiff,
+                        self.vhdl_ctstamp, self.vhdl_ptstamp,
+                        self.vhdl_tdiff)    
 
                 # Every control file requires status, diff, current_timestamp 
                 # and past timestamp
-                self._verilog_io+='    %s = %s;\n    ' \
-                        %(self.verilog_ptstamp, self.verilog_ctstamp)
+                self._vhdl_io+='    %s = %s;\n    ' \
+                        %(self.vhdl_ptstamp, self.vhdl_ctstamp)
 
-                for connector in self.verilog_connectors:
-                    self._verilog_io+='    %s = buffer_%s;\n    ' \
+                for connector in self.vhdl_connectors:
+                    self._vhdl_io+='    %s = buffer_%s;\n    ' \
                             %(connector.name,connector.name)
 
-                self._verilog_io+='    %s = $fscanf(%s, ' \
-                        %(self.verilog_stat,self.verilog_fptr)
+                self._vhdl_io+='    %s = $fscanf(%s, ' \
+                        %(self.vhdl_stat,self.vhdl_fptr)
 
             #The first column is timestap
-            iolines='            %s' %(self.verilog_ctstamp) 
+            iolines='            %s' %(self.vhdl_ctstamp) 
             format='\"%d'
-            for connector in self.verilog_connectors:
+            for connector in self.vhdl_connectors:
                 iolines='%s,\n            buffer_%s' \
                         %(iolines,connector.name)
                 format='%s\\t%s' %(format,connector.ioformat)
             format=format+'\\n\",\n'
-            self._verilog_io+=format+iolines+'\n        );\n    end\nend\n'
+            self._vhdl_io+=format+iolines+'\n        );\n    end\nend\n'
 
             #Repeat the last assignment outside the loop
-            self._verilog_io+='%s = %s-%s;\n#%s begin\n' %(self.verilog_tdiff,
-                    self.verilog_ctstamp, self.verilog_ptstamp,self.verilog_tdiff)    
-            self._verilog_io+='    %s = %s;\n' %(self.verilog_ptstamp,
-                    self.verilog_ctstamp)
-            for connector in self.verilog_connectors:
-                self._verilog_io+='    %s = buffer_%s;\n' \
+            self._vhdl_io+='%s = %s-%s;\n#%s begin\n' %(self.vhdl_tdiff,
+                    self.vhdl_ctstamp, self.vhdl_ptstamp,self.vhdl_tdiff)    
+            self._vhdl_io+='    %s = %s;\n' %(self.vhdl_ptstamp,
+                    self.vhdl_ctstamp)
+            for connector in self.vhdl_connectors:
+                self._vhdl_io+='    %s = buffer_%s;\n' \
                 %(connector.name,connector.name)
-            self._verilog_io+='end\nend\n'
+            self._vhdl_io+='end\nend\n'
         else:
             self.print_log(type='F', msg='Iotype not defined')
-        return self._verilog_io
+        return self._vhdl_io
 
     # Relocate i.e. change parent. 
     # probably this could be automated
